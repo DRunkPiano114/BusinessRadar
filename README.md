@@ -45,6 +45,11 @@ An artist selling their art pieces wanted to be updated about events, especially
      
 ** 演示:** [Google Slides](https://docs.google.com/presentation/d/1TkGB4P0EvWyFs2KsBtTQNaFSEUQ3saorDcyjx8ihf9U/edit?usp=sharing)
 
+### 示例：
+某餐厅希望获取未来一周内1公里范围内的活动更新。系统将每日推送本周剩余时间及下周的活动预告，促使餐厅及时核查库存、调整员工排班，并在活动当天加强促销力度。
+
+一位艺术品销售者希望获取活动资讯，尤其关注艺术类活动和市集日。她选择接收10公里范围内、提前1个月的关联活动通知，以便联系主办方并准备作品。
+
 <div align="center">
 
 **⭐ Star this project if it helps your business grow! ⭐**  
