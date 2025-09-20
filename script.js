@@ -14,131 +14,13 @@ class EventMapApp {
         this.businessType = '';
         this.aiBackendUrl = 'http://localhost:5001/api';
         
-        // Mock event data (real coordinates around Canberra)
-        this.events = [
-            {
-                id: 1,
-                title: 'Canberra Floriade',
-                type: 'festival',
-                date: '2025-09-25',
-                time: '09:00',
-                location: 'Commonwealth Park',
-                lat: -35.2756,
-                lng: 149.1310,
-                attendees: 15000,
-                description: 'Spring flower exhibition, expected to attract many tourists and families',
-                businessTip: 'Suitable for: Food stalls, flower sales, photography services, children\'s entertainment',
-                source: 'visitcanberra.com.au',
-                sourceUrl: 'https://visitcanberra.com.au/events/floriade'
-            },
-            {
-                id: 2,
-                title: 'Weekend Farmers Market',
-                type: 'market',
-                date: '2025-09-21',
-                time: '08:00',
-                location: 'Old Bus Depot Markets',
-                lat: -35.2823,
-                lng: 149.1276,
-                attendees: 3000,
-                description: 'Weekly organic produce market, local community gathering place',
-                businessTip: 'Suitable for: Organic food, handicrafts, coffee stalls, baked goods',
-                source: 'oldbusdepomarkets.com.au',
-                sourceUrl: 'https://oldbusdepomarkets.com.au'
-            },
-            {
-                id: 3,
-                title: 'Tech Innovation Expo',
-                type: 'exhibition',
-                date: '2025-09-28',
-                time: '10:00',
-                location: 'National Convention Centre',
-                lat: -35.2945,
-                lng: 149.1362,
-                attendees: 8000,
-                description: 'Latest technology product showcase and demonstrations, business professionals gathering',
-                businessTip: 'Suitable for: IT services, electronics, business consulting, training services',
-                source: 'eventbrite.com.au',
-                sourceUrl: 'https://eventbrite.com.au/e/tech-innovation-expo'
-            },
-            {
-                id: 4,
-                title: 'Canberra Marathon',
-                type: 'sports',
-                date: '2025-09-22',
-                time: '07:00',
-                location: 'Parliament Hill Area',
-                lat: -35.2688,
-                lng: 149.1337,
-                attendees: 12000,
-                description: 'Annual marathon event, route passes through major attractions',
-                businessTip: 'Suitable for: Sports equipment, energy food, massage services, sports drinks',
-                source: 'canberramarathon.org.au',
-                sourceUrl: 'https://canberramarathon.org.au'
-            },
-            {
-                id: 5,
-                title: 'Mid-Autumn Cultural Festival',
-                type: 'cultural',
-                date: '2025-09-29',
-                time: '18:00',
-                location: 'Chinese Garden',
-                lat: -35.2891,
-                lng: 149.1189,
-                attendees: 5000,
-                description: 'Traditional Mid-Autumn Festival celebration, multicultural experience',
-                businessTip: 'Suitable for: Mooncake sales, tea ceremony performances, cultural goods, Asian cuisine',
-                source: 'facebook.com/events',
-                sourceUrl: 'https://facebook.com/events/mid-autumn-festival-canberra'
-            },
-            {
-                id: 6,
-                title: 'Entrepreneurs Meetup',
-                type: 'conference',
-                date: '2025-09-26',
-                time: '19:00',
-                location: 'New Parliament Triangle',
-                lat: -35.2775,
-                lng: 149.1285,
-                attendees: 200,
-                description: 'Local entrepreneur networking event, high-quality business network',
-                businessTip: 'Suitable for: Business services, consulting, investment services, co-working spaces',
-                source: 'meetup.com',
-                sourceUrl: 'https://meetup.com/canberra-entrepreneurs'
-            },
-            {
-                id: 7,
-                title: 'Lakeside Music Festival',
-                type: 'festival',
-                date: '2025-09-30',
-                time: '16:00',
-                location: 'Lake Burley Griffin',
-                lat: -35.2904,
-                lng: 149.1299,
-                attendees: 8000,
-                description: 'Outdoor music festival, gathering of young people and music lovers',
-                businessTip: 'Suitable for: Audio equipment, beverage stalls, music merchandise, outdoor gear',
-                source: 'musicact.org.au',
-                sourceUrl: 'https://musicact.org.au/events/lakeside-music-festival'
-            },
-            {
-                id: 8,
-                title: 'Art Auction',
-                type: 'exhibition',
-                date: '2025-10-01',
-                time: '14:00',
-                location: 'National Gallery of Australia',
-                lat: -35.2967,
-                lng: 149.1321,
-                attendees: 500,
-                description: 'High-end art auction, collectors and art enthusiasts participation',
-                businessTip: 'Suitable for: Art appraisal, insurance services, fine dining, collection consulting',
-                source: 'nga.gov.au',
-                sourceUrl: 'https://nga.gov.au/exhibitions/art-auction'
-            }
-        ];
+        // Events will be loaded dynamically via AI search
+        this.events = [];
 
-        this.init();
+        // Initialize everything except map (map will be initialized by initMap callback)
+        this.getUserLocation();
+        this.bindEvents();
+        this.updateStatus('Found ' + this.events.length + ' nearby events');
     }
 
     init() {
@@ -193,24 +75,87 @@ class EventMapApp {
                         this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
                         this.addUserLocationMarker();
                         this.drawRadiusCircle();
-                        this.renderMapMarkers();
                     }
+                    
+                    // Search for events after getting location
+                    this.searchEvents();
                 },
                 (error) => {
                     console.log('Unable to get location, using default location (Canberra)');
+                    // Use Canberra as default location
+                    this.userLocation = { lat: -35.2809, lng: 149.1300 };
+                    
                     if (this.map) {
+                        this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
                         this.addUserLocationMarker();
                         this.drawRadiusCircle();
-                        this.renderMapMarkers();
                     }
+                    
+                    // Search for events with default location
+                    this.searchEvents();
                 }
             );
         } else {
+            // Use Canberra as default location
+            this.userLocation = { lat: -35.2809, lng: 149.1300 };
+            
             if (this.map) {
+                this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
                 this.addUserLocationMarker();
                 this.drawRadiusCircle();
-                this.renderMapMarkers();
             }
+            
+            // Search for events with default location
+            this.searchEvents();
+        }
+    }
+
+    async searchEvents() {
+        if (!this.userLocation) {
+            console.log('No user location available for event search');
+            return;
+        }
+
+        try {
+            this.updateStatus('🤖 AI正在搜索附近事件...');
+            
+            const response = await fetch(`${this.aiBackendUrl}/discover-events`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    location: this.userLocation,
+                    radius_km: this.searchRadius,
+                    business_type: this.businessType || 'general',
+                    search_real_events: true
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.events) {
+                this.events = data.events;
+                this.updateStatus(`✅ AI找到 ${this.events.length} 个附近事件`);
+                
+                // Render events and markers
+                this.renderEvents();
+                this.renderMapMarkers();
+            } else {
+                throw new Error(data.error || 'Failed to discover events');
+            }
+        } catch (error) {
+            console.error('Error searching for events:', error);
+            this.updateStatus('❌ 事件搜索失败，请稍后重试');
+            
+            // Show empty state
+            this.events = [];
+            this.renderEvents();
+            this.renderMapMarkers();
         }
     }
 
@@ -269,10 +214,9 @@ class EventMapApp {
             lng: place.geometry.location.lng()
         };
 
-        // Re-render events with new center
-        this.renderEvents();
+        // Search for events at new location
         this.drawRadiusCircle();
-        this.renderMapMarkers();
+        this.searchEvents();
 
         // Update status
         this.updateStatus(`Searched: ${place.name || place.formatted_address}`);
@@ -304,11 +248,29 @@ class EventMapApp {
         });
     }
 
-    renderEvents() {
+    async renderEvents() {
         const eventsList = document.getElementById('eventsList');
         const filteredEvents = this.getFilteredEvents();
         
-        eventsList.innerHTML = filteredEvents.map(event => `
+        // Handle empty events list
+        if (filteredEvents.length === 0) {
+            eventsList.innerHTML = `
+                <div class="no-events">
+                    <div class="no-events-icon">🔍</div>
+                    <div class="no-events-title">暂无事件</div>
+                    <div class="no-events-message">AI正在搜索附近事件，请稍候...</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Show loading state
+        eventsList.innerHTML = '<div class="loading-events">🤖 AI正在生成商业建议...</div>';
+        
+        // Generate AI content for each event
+        const eventsWithAI = await this.generateAIForEvents(filteredEvents);
+        
+        eventsList.innerHTML = eventsWithAI.map(event => `
             <div class="event-card" data-id="${event.id}" onclick="app.selectEvent(${event.id})">
                 <div class="event-title">${event.title}</div>
                 <div class="event-details">
@@ -335,8 +297,11 @@ class EventMapApp {
                     </div>
                 </div>
                 <div class="event-type">${this.getTypeLabel(event.type)}</div>
-                <div class="business-tip">
-                    💡 Business Tip: ${event.businessTip || event.business_tip || 'No business tips available'}
+                <div class="business-tip ai-generated-tip">
+                    <div class="ai-loading-small" id="loading-${event.id}">🤖 AI生成中...</div>
+                    <div class="ai-tip-content" id="tip-${event.id}" style="display: none;">
+                        💡 AI Business Tip: <span class="ai-tip-text">${event.ai_business_tip || '正在生成...'}</span>
+                    </div>
                 </div>
                 ${event.aiGenerated ? '<div class="ai-badge">🤖 AI Generated</div>' : ''}
                 ${event.opportunity_rating ? `<div class="opportunity-rating">⭐ Opportunity Rating: ${event.opportunity_rating}/10</div>` : ''}
@@ -353,6 +318,137 @@ class EventMapApp {
                 </div>
             </div>
         `).join('');
+        
+        // Generate AI tips for each event asynchronously
+        this.generateAITipsForEvents(eventsWithAI);
+    }
+
+    async generateAIForEvents(events) {
+        // Generate AI content for each event in parallel
+        const eventsWithAI = await Promise.all(events.map(async (event) => {
+            try {
+                const aiContent = await this.generateEventAI(event);
+                return {
+                    ...event,
+                    ai_business_tip: aiContent.business_tip,
+                    opportunity_rating: aiContent.opportunity_rating,
+                    revenue_potential: aiContent.revenue_potential,
+                    aiGenerated: true
+                };
+            } catch (error) {
+                console.error(`Error generating AI for event ${event.id}:`, error);
+                return {
+                    ...event,
+                    ai_business_tip: this.getFallbackBusinessTip(event),
+                    opportunity_rating: Math.floor(Math.random() * 3) + 6,
+                    revenue_potential: this.calculateRevenuePotential(event),
+                    aiGenerated: false
+                };
+            }
+        }));
+
+        return eventsWithAI;
+    }
+
+    async generateAITipsForEvents(events) {
+        // Generate AI tips for each event and update the UI
+        events.forEach(async (event) => {
+            try {
+                const aiContent = await this.generateEventAI(event);
+                
+                // Update the specific event's tip
+                const loadingElement = document.getElementById(`loading-${event.id}`);
+                const tipElement = document.getElementById(`tip-${event.id}`);
+                const tipTextElement = tipElement?.querySelector('.ai-tip-text');
+                
+                if (loadingElement && tipElement && tipTextElement) {
+                    loadingElement.style.display = 'none';
+                    tipTextElement.textContent = aiContent.business_tip;
+                    tipElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error(`Error generating AI tip for event ${event.id}:`, error);
+                
+                // Show fallback tip
+                const loadingElement = document.getElementById(`loading-${event.id}`);
+                const tipElement = document.getElementById(`tip-${event.id}`);
+                const tipTextElement = tipElement?.querySelector('.ai-tip-text');
+                
+                if (loadingElement && tipElement && tipTextElement) {
+                    loadingElement.style.display = 'none';
+                    tipTextElement.textContent = this.getFallbackBusinessTip(event);
+                    tipElement.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    async generateEventAI(event) {
+        try {
+            const response = await fetch(`${this.aiBackendUrl}/generate-event-ai`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event: event,
+                    businessType: this.businessType,
+                    radius: this.searchRadius
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.ai_content || this.getFallbackAI(event);
+            
+        } catch (error) {
+            console.error('AI generation error:', error);
+            return this.getFallbackAI(event);
+        }
+    }
+
+    getFallbackAI(event) {
+        const businessType = this.businessType || 'business';
+        const tips = {
+            'restaurant': `Perfect for food vendors! Set up a food stall and offer event-specific menu items. Consider partnering with local suppliers for fresh ingredients.`,
+            'retail': `Great opportunity for pop-up retail! Display your products and offer event discounts. Bring mobile payment options and promotional materials.`,
+            'services': `Network with attendees and organizers. Bring business cards, promotional materials, and consider offering on-site consultations.`,
+            'default': `Good opportunity for ${businessType} businesses. Consider setting up a booth or networking with attendees and organizers.`
+        };
+
+        return {
+            business_tip: tips[businessType] || tips.default,
+            opportunity_rating: Math.floor(Math.random() * 3) + 6, // 6-8 range
+            revenue_potential: this.calculateRevenuePotential(event)
+        };
+    }
+
+    getFallbackBusinessTip(event) {
+        const businessType = this.businessType || 'business';
+        const tips = {
+            'restaurant': `Perfect for food vendors! Set up a food stall and offer event-specific menu items.`,
+            'retail': `Great opportunity for pop-up retail! Display your products and offer event discounts.`,
+            'services': `Network with attendees and organizers. Bring business cards and promotional materials.`,
+            'default': `Good opportunity for ${businessType} businesses. Consider setting up a booth or networking.`
+        };
+
+        return tips[businessType] || tips.default;
+    }
+
+    calculateRevenuePotential(event) {
+        const baseRevenue = event.attendees * 0.1; // 10% conversion rate
+        const distanceFactor = this.calculateDistance(event) < 2 ? 1.2 : 0.8; // Closer events have higher potential
+        const categoryFactor = event.type === 'market' ? 1.5 : 1.0; // Markets are better for business
+        
+        const potential = Math.round(baseRevenue * distanceFactor * categoryFactor);
+        
+        if (potential > 1000) return `$${potential}+`;
+        if (potential > 500) return `$${potential}`;
+        if (potential > 100) return `$${potential}`;
+        return `$${Math.max(50, potential)}`;
     }
 
     renderMapMarkers() {
@@ -621,48 +717,26 @@ class EventMapApp {
         });
     }
 
-    // AI-Powered Event Discovery
-    async aiDiscoverEvents() {
-        try {
-            this.updateStatus('🤖 AI正在发现商业机会...');
-            
-            const response = await fetch(`${this.aiBackendUrl}/discover-events`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    location: this.userLocation,
-                    radius_km: this.searchRadius,
-                    business_type: this.businessType,
-                    date_range: 30
-                })
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    updateEventsWithAI(aiEvents) {
+        // Update existing events with AI insights instead of adding new events
+        aiEvents.forEach(aiEvent => {
+            // Find matching event by title and location
+            const existingEvent = this.events.find(e => 
+                e.title.toLowerCase() === aiEvent.title.toLowerCase() &&
+                e.location.toLowerCase() === aiEvent.location.toLowerCase()
+            );
+            
+            if (existingEvent) {
+                // Update existing event with AI insights
+                existingEvent.ai_business_tip = aiEvent.business_tip || aiEvent.ai_business_tip;
+                existingEvent.opportunity_rating = aiEvent.opportunity_rating;
+                existingEvent.revenue_potential = aiEvent.revenue_potential;
+                existingEvent.ai_insights = aiEvent.insights || aiEvent.ai_insights;
+                existingEvent.aiGenerated = true;
+                existingEvent.ai_enhanced = true;
             }
-
-            const data = await response.json();
-            
-            if (data.success && data.events) {
-                // Merge AI-discovered events with existing events
-                this.mergeAIEvents(data.events);
-                this.renderEvents();
-                this.renderMapMarkers();
-                this.updateStatus(`🤖 AI发现 ${data.events.length} 个新机会 - 总共 ${this.events.length} 个活动`);
-            } else {
-                throw new Error(data.error || 'AI discovery failed');
-            }
-            
-        } catch (error) {
-            console.error('AI discovery error:', error);
-            this.updateStatus('⚠️ AI发现失败 - 使用本地数据');
-            
-            // Fallback to local data
-            this.renderEvents();
-            this.renderMapMarkers();
-        }
+        });
     }
 
     mergeAIEvents(aiEvents) {
@@ -739,6 +813,9 @@ class EventMapApp {
     updateBusinessType() {
         this.businessType = document.getElementById('businessType').value;
         this.updateStatus(`Business type updated: ${this.businessType || 'All Businesses'}`);
+        
+        // Search for events with new business type
+        this.searchEvents();
     }
 }
 
@@ -758,24 +835,8 @@ function updateDistance(value) {
         radiusCircle.style.transform = `scale(${1 + (value / 50) * 0.5})`;
     }
     
-    // Update events and map with smooth transition
-    app.renderEvents();
-    app.renderMapMarkers();
-    
-    // Update status with more detailed information
-    const filteredEvents = app.getFilteredEvents();
-    const eventCount = filteredEvents.length;
-    let statusMessage = `🔍 搜索半径: ${value}km - 找到 ${eventCount} 个活动`;
-    
-    if (eventCount === 0) {
-        statusMessage += ' - 尝试扩大搜索范围';
-    } else if (eventCount < 3) {
-        statusMessage += ' - 建议扩大搜索范围获得更多机会';
-    } else if (eventCount > 10) {
-        statusMessage += ' - 缩小范围获得更精准的结果';
-    }
-    
-    app.updateStatus(statusMessage);
+    // Search for events with new radius
+    app.searchEvents();
     
     // Add visual feedback to map
     if (app.map) {
@@ -834,11 +895,6 @@ function searchEvents() {
 }
 
 // AI Functions
-function aiDiscoverEvents() {
-    if (app) {
-        app.aiDiscoverEvents();
-    }
-}
 
 function analyzeCurrentOpportunities() {
     if (app) {
@@ -851,6 +907,7 @@ function updateBusinessType() {
         app.updateBusinessType();
     }
 }
+
 
 // Initialize application
 let app;
@@ -896,8 +953,21 @@ function handleMapError() {
 
 function initMap() {
     try {
-        app = new EventMapApp();
-        // Map will be initialized in the constructor
+        console.log('Initializing Google Maps...');
+        
+        // Initialize app if not already initialized
+        if (!app) {
+            app = new EventMapApp();
+        }
+        
+        // Now initialize the map
+        if (app && typeof google !== 'undefined' && google.maps) {
+            app.initMap();
+            console.log('Google Maps initialized successfully');
+        } else {
+            console.error('Google Maps API not available');
+            handleMapError();
+        }
     } catch (error) {
         console.error('Error initializing map:', error);
         handleMapError();

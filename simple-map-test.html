@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Map Test</title>
+    <style>
+        #map { height: 400px; width: 100%; }
+        .error { color: red; padding: 10px; background: #ffe6e6; border: 1px solid #ffcccc; }
+        .success { color: green; padding: 10px; background: #e6ffe6; border: 1px solid #ccffcc; }
+    </style>
+</head>
+<body>
+    <h1>Google Maps API 测试</h1>
+    <div id="status"></div>
+    <div id="map"></div>
+
+    <script>
+        function initMap() {
+            try {
+                const map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: -35.2809, lng: 149.1300 },
+                    zoom: 13
+                });
+                
+                document.getElementById('status').innerHTML = '<div class="success">✅ 地图加载成功！</div>';
+                
+                // 添加标记
+                new google.maps.Marker({
+                    position: { lat: -35.2809, lng: 149.1300 },
+                    map: map,
+                    title: 'Canberra'
+                });
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = '<div class="error">❌ 地图加载失败: ' + error.message + '</div>';
+            }
+        }
+
+        function handleMapError() {
+            document.getElementById('status').innerHTML = '<div class="error">❌ Google Maps API 加载失败 - 请检查 API 密钥配置</div>';
+        }
+    </script>
+
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key= (your_key)&callback=initMap&v=20240921" 
+        onerror="handleMapError()">
+    </script>
+</body>
+</html>

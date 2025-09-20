@@ -24,6 +24,29 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 1000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .header {
@@ -126,31 +149,6 @@ body {
     background: #dc2626;
 }
 
-.ai-search-btn {
-    position: absolute;
-    right: 88px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.9;
-    z-index: 10;
-}
-
-.ai-search-btn:hover {
-    opacity: 1;
-    background: linear-gradient(135deg, #5a67d8, #6b46c1);
-    transform: translateY(-50%) translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
 
 .ai-controls {
     margin-top: 15px;
@@ -222,6 +220,8 @@ body {
     box-shadow: none;
 }
 
+
+
 /* AI-Generated Content Styles */
 .ai-badge {
     display: inline-block;
@@ -283,6 +283,147 @@ body {
     font-size: 13px;
     line-height: 1.4;
     margin: 4px 0;
+}
+
+/* AI Generated Content Styles */
+.ai-generated {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.ai-highlight {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    padding: 8px;
+    margin: 4px 0;
+}
+
+.ai-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.ai-stat:last-child {
+    border-bottom: none;
+}
+
+.ai-stat-label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.ai-stat-value {
+    font-weight: 600;
+    color: #667eea;
+}
+
+/* Loading Animation for AI Content */
+.ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #667eea;
+    font-style: italic;
+}
+
+.ai-loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid #667eea;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* AI Generated Tip Styles */
+.ai-generated-tip {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+}
+
+.ai-loading-small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #0ea5e9;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.ai-loading-small::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid #0ea5e9;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.ai-tip-content {
+    color: #0c4a6e;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.ai-tip-text {
+    font-weight: 500;
+}
+
+.loading-events {
+    text-align: center;
+    padding: 40px 20px;
+    color: #667eea;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* No events state */
+.no-events {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.no-events-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.no-events-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.no-events-message {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
 }
 
 .filters {
@@ -416,7 +557,6 @@ body {
 /* Events List */
 .events-list {
     flex: 1;
-    overflow-y: auto;
     padding: 0 20px 20px;
 }
 
@@ -607,6 +747,9 @@ body {
     .sidebar {
         width: 100%;
         height: 50vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
     }
     
     .map-container {

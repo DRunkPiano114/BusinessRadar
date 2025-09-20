@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps API Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        #map {
+            height: 400px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Google Maps API 调试工具</h1>
+    
+    <div class="debug-container">
+        <h2>API 状态检查</h2>
+        <div id="apiStatus" class="status info">正在检查 API 状态...</div>
+        <div id="errorDetails" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="debug-container">
+        <h2>地图测试</h2>
+        <button class="test-button" onclick="testMapLoad()">测试地图加载</button>
+        <button class="test-button" onclick="testPlacesAPI()">测试 Places API</button>
+        <button class="test-button" onclick="testGeocoding()">测试地理编码</button>
+        <div id="map"></div>
+    </div>
+
+    <div class="debug-container">
+        <h2>API 密钥信息</h2>
+        <p><strong>当前 API 密钥:</strong> <code> (your_key)</code></p>
+        <p><strong>请求的库:</strong> places</p>
+        <p><strong>回调函数:</strong> initMap</p>
+    </div>
+
+    <div class="debug-container">
+        <h2>解决步骤</h2>
+        <ol>
+            <li>访问 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+            <li>选择您的项目</li>
+            <li>启用以下 API：
+                <ul>
+                    <li>Maps JavaScript API</li>
+                    <li>Places API</li>
+                    <li>Geocoding API (可选)</li>
+                </ul>
+            </li>
+            <li>检查 API 密钥限制设置</li>
+            <li>确保计费账户已启用</li>
+        </ol>
+    </div>
+
+    <script>
+        let map;
+        let apiLoaded = false;
+        let errorDetails = [];
+
+        // 检查 API 加载状态
+        function checkAPIStatus() {
+            const statusDiv = document.getElementById('apiStatus');
+            const errorDiv = document.getElementById('errorDetails');
+            
+            if (typeof google !== 'undefined' && google.maps) {
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Google Maps API 已成功加载';
+                apiLoaded = true;
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Google Maps API 加载失败';
+                
+                // 显示详细错误信息
+                errorDiv.style.display = 'block';
+                errorDiv.className = 'status error';
+                errorDiv.innerHTML = `
+                    <strong>可能的原因:</strong><br>
+                    • API 密钥无效或已过期<br>
+                    • 未启用 Maps JavaScript API<br>
+                    • API 密钥有域名限制<br>
+                    • 计费账户未启用<br>
+                    • 网络连接问题
+                `;
+            }
+        }
+
+        // 测试地图加载
+        function testMapLoad() {
+            if (!apiLoaded) {
+                alert('请先等待 API 加载完成');
+                return;
+            }
+            
+            try {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: -35.2809, lng: 149.1300 },
+                    zoom: 13
+                });
+                
+                // 添加标记
+                new google.maps.Marker({
+                    position: { lat: -35.2809, lng: 149.1300 },
+                    map: map,
+                    title: '测试标记'
+                });
+                
+                alert('✅ 地图加载成功！');
+            } catch (error) {
+                alert('❌ 地图加载失败: ' + error.message);
+            }
+        }
+
+        // 测试 Places API
+        function testPlacesAPI() {
+            if (!apiLoaded) {
+                alert('请先等待 API 加载完成');
+                return;
+            }
+            
+            try {
+                const input = document.createElement('input');
+                const autocomplete = new google.maps.places.Autocomplete(input);
+                alert('✅ Places API 可用！');
+            } catch (error) {
+                alert('❌ Places API 不可用: ' + error.message);
+            }
+        }
+
+        // 测试地理编码
+        function testGeocoding() {
+            if (!apiLoaded) {
+                alert('请先等待 API 加载完成');
+                return;
+            }
+            
+            try {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: 'Canberra, Australia' }, (results, status) => {
+                    if (status === 'OK') {
+                        alert('✅ 地理编码 API 可用！');
+                    } else {
+                        alert('❌ 地理编码 API 不可用: ' + status);
+                    }
+                });
+            } catch (error) {
+                alert('❌ 地理编码 API 测试失败: ' + error.message);
+            }
+        }
+
+        // 页面加载完成后检查状态
+        window.onload = function() {
+            setTimeout(checkAPIStatus, 2000);
+        };
+    </script>
+
+    <!-- Google Maps API -->
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key= (your_key)&libraries=places&callback=checkAPIStatus&v=20240921">
+    </script>
+</body>
+</html>
