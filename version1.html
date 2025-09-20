@@ -38,6 +38,7 @@
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            position: relative;
         }
 
         .header h1 {
@@ -49,6 +50,29 @@
         .header p {
             font-size: 14px;
             opacity: 0.9;
+        }
+
+        .go-pro-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .go-pro-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
         }
 
         /* Search and Filters */
@@ -423,6 +447,7 @@
             <div class="header">
                 <h1>🎯 Business Radar</h1>
                 <p>Discover local events, seize business opportunities</p>
+                <a href="pro.html" class="go-pro-btn">Go Pro</a>
             </div>
 
             <div class="search-section">
