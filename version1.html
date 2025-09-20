@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local Event Discovery Map - Business Radar</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
             margin: 0;
@@ -112,6 +111,26 @@
             padding: 8px;
             border-radius: 8px;
             cursor: pointer;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 48px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            opacity: 1;
+            background: #dc2626;
         }
 
         .filters {
@@ -304,48 +323,8 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Custom Map Marker Styles */
-        .custom-marker {
-            width: 40px;
-            height: 40px;
-            background: #667eea;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            border: 3px solid white;
-        }
-
-        .custom-marker:before {
-            content: '';
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            transform: rotate(45deg);
-        }
-
-        .custom-marker.selected {
-            background: #f59e0b;
-            transform: rotate(-45deg) scale(1.2);
-        }
-
-        .custom-marker.festival { background: #e11d48; }
-        .custom-marker.market { background: #059669; }
-        .custom-marker.exhibition { background: #7c3aed; }
-        .custom-marker.conference { background: #2563eb; }
-        .custom-marker.sports { background: #dc2626; }
-        .custom-marker.cultural { background: #ea580c; }
-
-        /* Popup Styles */
-        .leaflet-popup-content-wrapper {
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-
-        .popup-content {
+        /* InfoWindow Styles */
+        .info-window {
             max-width: 300px;
             padding: 4px;
         }
@@ -452,11 +431,16 @@
 
             <div class="search-section">
                 <div class="search-box">
-                    <input type="text" class="search-input" placeholder="Search locations" id="searchInput">
+                    <input type="text" class="search-input" placeholder="Search locations or addresses" id="searchInput">
                     <button class="search-btn" onclick="searchEvents()">
                         <svg class="icon" viewBox="0 0 20 20">
                             <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z"/>
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <button class="clear-btn" onclick="app.clearSearch()" title="Clear search">
+                        <svg class="icon" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                         </svg>
                     </button>
                 </div>
@@ -493,8 +477,8 @@
         </div>
     </div>
 
-    <!-- Include Leaflet Map Library -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=&libraries=places&callback=initMap"></script>
     
     <script>
         class EventMapApp {
@@ -506,6 +490,9 @@
                 this.map = null;
                 this.markers = [];
                 this.userMarker = null;
+                this.infoWindow = null;
+                this.searchMarker = null;
+                this.autocomplete = null;
                 
                 // Mock event data (real coordinates around Canberra)
                 this.events = [
@@ -643,19 +630,30 @@
             }
 
             initMap() {
-                // Initialize Leaflet map, centered on Canberra
-                this.map = L.map('map').setView([-35.2809, 149.1300], 13);
-
-                // Add map tile layer - using OpenStreetMap
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 19
-                }).addTo(this.map);
-
-                // Add map event listeners
-                this.map.on('moveend', () => {
-                    this.updateVisibleEvents();
+                // Initialize Google Map, centered on Canberra
+                this.map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: -35.2809, lng: 149.1300 },
+                    zoom: 13,
+                    styles: [
+                        {
+                            featureType: 'poi',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        }
+                    ]
                 });
+
+                // Create info window
+                this.infoWindow = new google.maps.InfoWindow();
+
+                // Initialize autocomplete
+                this.initAutocomplete();
+
+                // Add user location marker
+                this.addUserLocationMarker();
+                
+                // Render event markers
+                this.renderMapMarkers();
             }
 
             getUserLocation() {
@@ -667,44 +665,116 @@
                                 lng: position.coords.longitude
                             };
                             
-                            // Update map center
-                            this.map.setView([this.userLocation.lat, this.userLocation.lng], 13);
-                            
-                            // Add user location marker
-                            this.addUserLocationMarker();
-                            
-                            // Re-render event markers
-                            this.renderMapMarkers();
+                            // Update map center if map is initialized
+                            if (this.map) {
+                                this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
+                                this.addUserLocationMarker();
+                                this.renderMapMarkers();
+                            }
                         },
                         (error) => {
                             console.log('Unable to get location, using default location (Canberra)');
-                            this.addUserLocationMarker();
-                            this.renderMapMarkers();
+                            if (this.map) {
+                                this.addUserLocationMarker();
+                                this.renderMapMarkers();
+                            }
                         }
                     );
                 } else {
-                    this.addUserLocationMarker();
-                    this.renderMapMarkers();
+                    if (this.map) {
+                        this.addUserLocationMarker();
+                        this.renderMapMarkers();
+                    }
                 }
+            }
+
+            initAutocomplete() {
+                const searchInput = document.getElementById('searchInput');
+                
+                // Create autocomplete
+                this.autocomplete = new google.maps.places.Autocomplete(searchInput, {
+                    types: ['establishment', 'geocode'],
+                    componentRestrictions: { country: 'au' } // Restrict to Australia
+                });
+
+                // Listen for place selection
+                this.autocomplete.addListener('place_changed', () => {
+                    this.handlePlaceSelection();
+                });
+            }
+
+            handlePlaceSelection() {
+                const place = this.autocomplete.getPlace();
+                
+                if (!place.geometry || !place.geometry.location) {
+                    console.log('No details available for input: ' + place.name);
+                    return;
+                }
+
+                // Clear previous search marker
+                if (this.searchMarker) {
+                    this.searchMarker.setMap(null);
+                }
+
+                // Create search marker
+                const searchIcon = {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 12,
+                    fillColor: '#f59e0b',
+                    fillOpacity: 1,
+                    strokeColor: 'white',
+                    strokeWeight: 3
+                };
+
+                this.searchMarker = new google.maps.Marker({
+                    position: place.geometry.location,
+                    map: this.map,
+                    icon: searchIcon,
+                    title: place.name || 'Searched Location'
+                });
+
+                // Center map on searched location
+                this.map.setCenter(place.geometry.location);
+                this.map.setZoom(15);
+
+                // Update user location to searched location for distance calculations
+                this.userLocation = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                };
+
+                // Re-render events with new center
+                this.renderEvents();
+                this.renderMapMarkers();
+
+                // Update status
+                this.updateStatus(`Searched: ${place.name || place.formatted_address}`);
+
+                // Close any open info windows
+                this.infoWindow.close();
             }
 
             addUserLocationMarker() {
                 if (this.userMarker) {
-                    this.map.removeLayer(this.userMarker);
+                    this.userMarker.setMap(null);
                 }
                 
                 // Create user location marker
-                const userIcon = L.divIcon({
-                    className: 'user-location-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
+                const userIcon = {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 1,
+                    strokeColor: 'white',
+                    strokeWeight: 3
+                };
+                
+                this.userMarker = new google.maps.Marker({
+                    position: { lat: this.userLocation.lat, lng: this.userLocation.lng },
+                    map: this.map,
+                    icon: userIcon,
+                    title: 'Your Location'
                 });
-                
-                this.userMarker = L.marker([this.userLocation.lat, this.userLocation.lng], {
-                    icon: userIcon
-                }).addTo(this.map);
-                
-                this.userMarker.bindPopup('📍 Your Location').openPopup();
             }
 
             renderEvents() {
@@ -758,7 +828,7 @@
             renderMapMarkers() {
                 // Clear existing markers
                 this.markers.forEach(marker => {
-                    this.map.removeLayer(marker);
+                    marker.setMap(null);
                 });
                 this.markers = [];
                 
@@ -766,21 +836,27 @@
                 
                 filteredEvents.forEach(event => {
                     // Create custom marker icon
-                    const markerIcon = L.divIcon({
-                        className: `custom-marker ${event.type}`,
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 40],
-                        popupAnchor: [0, -40]
-                    });
+                    const markerIcon = {
+                        path: 'M0,0 C-2,-20 -10,-22 -10,-30 A10,10 0 1,1 10,-30 C10,-22 2,-20 0,0 z',
+                        fillColor: this.getMarkerColor(event.type),
+                        fillOpacity: 1,
+                        strokeColor: 'white',
+                        strokeWeight: 3,
+                        scale: 1.5,
+                        anchor: new google.maps.Point(0, -30)
+                    };
                     
                     // Create marker
-                    const marker = L.marker([event.lat, event.lng], {
-                        icon: markerIcon
-                    }).addTo(this.map);
+                    const marker = new google.maps.Marker({
+                        position: { lat: event.lat, lng: event.lng },
+                        map: this.map,
+                        icon: markerIcon,
+                        title: event.title
+                    });
                     
-                    // Create popup content
-                    const popupContent = `
-                        <div class="popup-content">
+                    // Create info window content
+                    const infoContent = `
+                        <div class="info-window">
                             <div class="popup-title">${event.title}</div>
                             <div class="popup-details">
                                 📅 ${event.date} ${event.time}<br>
@@ -797,20 +873,30 @@
                         </div>
                     `;
                     
-                    marker.bindPopup(popupContent, {
-                        maxWidth: 300,
-                        className: 'custom-popup'
-                    });
-                    
                     // Marker click event
-                    marker.on('click', () => {
+                    marker.addListener('click', () => {
                         this.selectEvent(event.id);
+                        this.infoWindow.setContent(infoContent);
+                        this.infoWindow.open(this.map, marker);
                     });
                     
                     // Store marker reference
                     marker.eventId = event.id;
                     this.markers.push(marker);
                 });
+            }
+
+            getMarkerColor(type) {
+                const colors = {
+                    festival: '#e11d48',
+                    market: '#059669',
+                    exhibition: '#7c3aed',
+                    conference: '#2563eb',
+                    sports: '#dc2626',
+                    cultural: '#ea580c',
+                    default: '#667eea'
+                };
+                return colors[type] || colors.default;
             }
 
             selectEvent(eventId) {
@@ -825,23 +911,33 @@
                 
                 // Update map marker selection state
                 this.markers.forEach(marker => {
-                    const markerElement = marker.getElement();
-                    if (markerElement) {
-                        markerElement.classList.remove('selected');
-                        if (marker.eventId === eventId) {
-                            markerElement.classList.add('selected');
+                    if (marker.eventId === eventId) {
+                        // Move map center to selected event
+                        const event = this.events.find(e => e.id === eventId);
+                        if (event) {
+                            this.map.setCenter({ lat: event.lat, lng: event.lng });
+                            this.map.setZoom(15);
                             
-                            // Move map center to selected event
-                            const event = this.events.find(e => e.id === eventId);
-                            if (event) {
-                                this.map.setView([event.lat, event.lng], 15, {
-                                    animate: true,
-                                    duration: 0.5
-                                });
-                                
-                                // Open popup
-                                marker.openPopup();
-                            }
+                            // Open info window
+                            const infoContent = `
+                                <div class="info-window">
+                                    <div class="popup-title">${event.title}</div>
+                                    <div class="popup-details">
+                                        📅 ${event.date} ${event.time}<br>
+                                        📍 ${event.location}<br>
+                                        👥 ${event.attendees.toLocaleString()} attendees<br>
+                                        📏 ${this.calculateDistance(event).toFixed(1)} km from you<br>
+                                        📝 ${event.description}<br>
+                                        📰 Source: <a href="${event.sourceUrl}" target="_blank" style="color: #3b82f6;">${event.source}</a>
+                                    </div>
+                                    <div class="popup-actions">
+                                        <button class="popup-btn primary" onclick="app.addToCalendar(${event.id})">Add to Calendar</button>
+                                        <button class="popup-btn secondary" onclick="app.shareEvent(${event.id})">Share</button>
+                                    </div>
+                                </div>
+                            `;
+                            this.infoWindow.setContent(infoContent);
+                            this.infoWindow.open(this.map, marker);
                         }
                     }
                 });
@@ -920,6 +1016,28 @@
                 document.getElementById('statusBar').innerHTML = message;
             }
 
+            clearSearch() {
+                // Clear search marker
+                if (this.searchMarker) {
+                    this.searchMarker.setMap(null);
+                    this.searchMarker = null;
+                }
+                
+                // Clear search input
+                document.getElementById('searchInput').value = '';
+                
+                // Reset to original user location
+                this.userLocation = { lat: -35.2809, lng: 149.1300 };
+                this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
+                this.map.setZoom(13);
+                
+                // Re-render everything
+                this.addUserLocationMarker();
+                this.renderEvents();
+                this.renderMapMarkers();
+                this.updateStatus('Search cleared');
+            }
+
             addToCalendar(eventId) {
                 const event = this.events.find(e => e.id === eventId);
                 if (event) {
@@ -973,37 +1091,54 @@
             
             app.updateStatus('Searching: ' + query);
             
-            // Simulate search delay
-            setTimeout(() => {
-                // Filter events
-                const filteredEvents = app.events.filter(event => 
-                    event.title.toLowerCase().includes(query) ||
-                    event.location.toLowerCase().includes(query) ||
-                    event.description.toLowerCase().includes(query) ||
-                    app.getTypeLabel(event.type).toLowerCase().includes(query)
-                );
-                
-                // Temporarily store original events, show search results
-                const originalEvents = app.events;
-                app.events = filteredEvents;
-                app.renderEvents();
-                app.renderMapMarkers();
-                app.updateStatus(`Search results: Found ${filteredEvents.length} matching events`);
-                
-                // Restore original event list after 3 seconds
+            // Check if the query looks like an address (contains common address keywords)
+            const addressKeywords = ['street', 'avenue', 'road', 'drive', 'place', 'court', 'lane', 'way', 'st', 'ave', 'rd', 'dr', 'pl', 'ct', 'ln', 'wy'];
+            const isAddressQuery = addressKeywords.some(keyword => query.includes(keyword)) || 
+                                 query.includes('canberra') || 
+                                 query.includes('act') ||
+                                 query.includes('australia');
+            
+            if (isAddressQuery) {
+                // For address queries, trigger the autocomplete selection
+                // This will be handled by the autocomplete listener
+                app.updateStatus('Searching for address...');
+            } else {
+                // For event queries, filter events
                 setTimeout(() => {
-                    app.events = originalEvents;
+                    const filteredEvents = app.events.filter(event => 
+                        event.title.toLowerCase().includes(query) ||
+                        event.location.toLowerCase().includes(query) ||
+                        event.description.toLowerCase().includes(query) ||
+                        app.getTypeLabel(event.type).toLowerCase().includes(query)
+                    );
+                    
+                    // Temporarily store original events, show search results
+                    const originalEvents = app.events;
+                    app.events = filteredEvents;
                     app.renderEvents();
                     app.renderMapMarkers();
-                    app.updateStatus(`Found ${app.getFilteredEvents().length} nearby events`);
-                }, 5000);
-            }, 800);
+                    app.updateStatus(`Search results: Found ${filteredEvents.length} matching events`);
+                    
+                    // Restore original event list after 5 seconds
+                    setTimeout(() => {
+                        app.events = originalEvents;
+                        app.renderEvents();
+                        app.renderMapMarkers();
+                        app.updateStatus(`Found ${app.getFilteredEvents().length} nearby events`);
+                    }, 5000);
+                }, 800);
+            }
         }
 
         // Initialize application
         let app;
-        document.addEventListener('DOMContentLoaded', () => {
+        function initMap() {
             app = new EventMapApp();
+            // Map will be initialized in the constructor
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // App will be initialized when Google Maps loads
         });
     </script>
 </body>
