@@ -10,6 +10,7 @@ class EventMapApp {
         this.infoWindow = null;
         this.searchMarker = null;
         this.autocomplete = null;
+        this.radiusCircle = null;
         
         // Mock event data (real coordinates around Canberra)
         this.events = [
@@ -169,6 +170,9 @@ class EventMapApp {
         // Add user location marker
         this.addUserLocationMarker();
         
+        // Draw radius circle
+        this.drawRadiusCircle();
+        
         // Render event markers
         this.renderMapMarkers();
     }
@@ -186,6 +190,7 @@ class EventMapApp {
                     if (this.map) {
                         this.map.setCenter({ lat: this.userLocation.lat, lng: this.userLocation.lng });
                         this.addUserLocationMarker();
+                        this.drawRadiusCircle();
                         this.renderMapMarkers();
                     }
                 },
@@ -193,6 +198,7 @@ class EventMapApp {
                     console.log('Unable to get location, using default location (Canberra)');
                     if (this.map) {
                         this.addUserLocationMarker();
+                        this.drawRadiusCircle();
                         this.renderMapMarkers();
                     }
                 }
@@ -200,6 +206,7 @@ class EventMapApp {
         } else {
             if (this.map) {
                 this.addUserLocationMarker();
+                this.drawRadiusCircle();
                 this.renderMapMarkers();
             }
         }
@@ -262,6 +269,7 @@ class EventMapApp {
 
         // Re-render events with new center
         this.renderEvents();
+        this.drawRadiusCircle();
         this.renderMapMarkers();
 
         // Update status
@@ -550,6 +558,7 @@ class EventMapApp {
         
         // Re-render everything
         this.addUserLocationMarker();
+        this.drawRadiusCircle();
         this.renderEvents();
         this.renderMapMarkers();
         this.updateStatus('Search cleared');
@@ -587,15 +596,67 @@ class EventMapApp {
             }
         }
     }
+
+    drawRadiusCircle() {
+        // Remove existing radius circle
+        if (this.radiusCircle) {
+            this.radiusCircle.setMap(null);
+        }
+
+        // Create radius circle
+        this.radiusCircle = new google.maps.Circle({
+            strokeColor: '#667eea',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#667eea',
+            fillOpacity: 0.1,
+            map: this.map,
+            center: this.userLocation,
+            radius: this.searchRadius * 1000 // Convert km to meters
+        });
+    }
 }
 
 // Global functions
 function updateDistance(value) {
-    document.getElementById('distanceValue').textContent = value;
+    const distanceValue = document.getElementById('distanceValue');
+    const radiusCircle = document.getElementById('radiusCircle');
+    
+    // Update display with animation
+    distanceValue.textContent = value;
     app.searchRadius = parseInt(value);
+    
+    // Update radius circle visual feedback
+    if (radiusCircle) {
+        const percentage = ((value - 1) / 49) * 100;
+        radiusCircle.style.left = `${percentage}%`;
+        radiusCircle.style.transform = `scale(${1 + (value / 50) * 0.5})`;
+    }
+    
+    // Update events and map with smooth transition
     app.renderEvents();
     app.renderMapMarkers();
-    app.updateStatus(`Search radius: ${value}km - Found ${app.getFilteredEvents().length} events`);
+    
+    // Update status with more detailed information
+    const filteredEvents = app.getFilteredEvents();
+    const eventCount = filteredEvents.length;
+    let statusMessage = `🔍 搜索半径: ${value}km - 找到 ${eventCount} 个活动`;
+    
+    if (eventCount === 0) {
+        statusMessage += ' - 尝试扩大搜索范围';
+    } else if (eventCount < 3) {
+        statusMessage += ' - 建议扩大搜索范围获得更多机会';
+    } else if (eventCount > 10) {
+        statusMessage += ' - 缩小范围获得更精准的结果';
+    }
+    
+    app.updateStatus(statusMessage);
+    
+    // Add visual feedback to map
+    if (app.map) {
+        // Draw radius circle on map
+        app.drawRadiusCircle();
+    }
 }
 
 function searchEvents() {
@@ -649,9 +710,54 @@ function searchEvents() {
 
 // Initialize application
 let app;
+
+// Error handling for Google Maps API
+function handleMapError() {
+    console.error('Google Maps API failed to load');
+    const statusBar = document.getElementById('statusBar');
+    if (statusBar) {
+        statusBar.innerHTML = `
+            <div style="color: #dc2626; padding: 10px; text-align: center;">
+                ⚠️ 地图加载失败 - 请检查API密钥配置
+                <br>
+                <small>Error: Google Maps API failed to load</small>
+            </div>
+        `;
+    }
+    
+    // Show error message in map container
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        mapContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: #64748b;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🗺️</div>
+                <h3 style="margin-bottom: 8px; color: #1e293b;">地图无法加载</h3>
+                <p style="text-align: center; margin-bottom: 16px;">
+                    请检查Google Maps API密钥配置<br>
+                    确保已启用Maps JavaScript API和Places API
+                </p>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-top: 16px; max-width: 400px;">
+                    <strong>解决步骤：</strong>
+                    <ol style="text-align: left; margin: 8px 0; padding-left: 20px;">
+                        <li>访问 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                        <li>选择您的项目</li>
+                        <li>启用 "Maps JavaScript API" 和 "Places API"</li>
+                        <li>检查API密钥的域名限制设置</li>
+                    </ol>
+                </div>
+            </div>
+        `;
+    }
+}
+
 function initMap() {
-    app = new EventMapApp();
-    // Map will be initialized in the constructor
+    try {
+        app = new EventMapApp();
+        // Map will be initialized in the constructor
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        handleMapError();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

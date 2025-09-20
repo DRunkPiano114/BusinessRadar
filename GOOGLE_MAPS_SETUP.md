@@ -1,125 +1,103 @@
-# Google Maps API 配置说明
+# Google Maps API 配置指南
 
-## 概述
-您的Business Radar应用已成功迁移到Google Maps API，保留了所有原有功能。
+## 🔑 API密钥问题解决方案
 
-## 主要变更
+### 1. 检查API密钥状态
+访问 [Google Cloud Console](https://console.cloud.google.com/) 并检查：
 
-### 1. 地图库替换
-- **之前**: Leaflet + OpenStreetMap
-- **现在**: Google Maps JavaScript API
+- ✅ API密钥是否有效
+- ✅ 是否启用了必要的API服务
+- ✅ 域名限制设置是否正确
 
-### 2. 保留的功能
-✅ 事件搜索和过滤  
-✅ 距离滑块控制  
-✅ 自定义标记样式（按事件类型着色）  
-✅ 用户位置标记  
-✅ 事件详情弹窗  
-✅ 添加到日历功能  
-✅ 分享功能  
-✅ 响应式设计  
-✅ 所有交互功能  
+### 2. 必需的API服务
+确保启用了以下API服务：
 
-### 3. 新增功能
-- Google Maps的卫星视图和街景支持
-- 更精确的地图渲染
-- 更好的移动端体验
+- **Maps JavaScript API** - 用于显示地图
+- **Places API** - 用于地点搜索和自动完成
+- **Geocoding API** - 用于地址转换（可选）
 
-## 配置步骤
-
-### 1. 获取Google Maps API密钥
+### 3. 启用API服务步骤
 
 1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
-2. 创建新项目或选择现有项目
-3. 启用以下API：
+2. 选择您的项目
+3. 导航到 "APIs & Services" > "Library"
+4. 搜索并启用以下API：
    - Maps JavaScript API
-   - Places API (可选，用于搜索功能)
-   - Geocoding API (可选，用于地址解析)
+   - Places API
+   - Geocoding API (可选)
 
-4. 创建API密钥：
-   - 转到"凭据"页面
-   - 点击"创建凭据" > "API密钥"
-   - 复制生成的API密钥
+### 4. 配置API密钥限制
 
-### 2. 配置API密钥
+#### 应用限制：
+- **HTTP referrers (web sites)** - 推荐用于开发
+- 添加以下域名：
+  - `localhost:*` (用于本地开发)
+  - `127.0.0.1:*` (用于本地开发)
+  - `your-domain.com/*` (用于生产环境)
 
-在 `version1.html` 文件中，找到第456行：
+#### API限制：
+- Maps JavaScript API
+- Places API
+- Geocoding API
 
-```html
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+### 5. 常见错误及解决方案
+
+#### 错误：`This API project is not authorized to use this API`
+**解决方案：** 启用相应的API服务
+
+#### 错误：`RefererNotAllowedMapError`
+**解决方案：** 检查HTTP referrers设置，确保包含当前域名
+
+#### 错误：`ApiNotActivatedMapError`
+**解决方案：** 在Google Cloud Console中启用Maps JavaScript API
+
+#### 错误：`RequestDeniedMapError`
+**解决方案：** 检查API密钥是否正确，是否有正确的权限
+
+### 6. 测试API密钥
+
+您可以使用以下URL测试API密钥是否工作：
+
+```
+https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places
 ```
 
-将 `YOUR_API_KEY` 替换为您的实际API密钥：
+如果返回JavaScript代码而不是错误，说明API密钥配置正确。
 
-```html
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&callback=initMap"></script>
-```
+### 7. 费用控制
 
-### 3. 安全配置（推荐）
+- 设置使用配额限制
+- 监控API使用情况
+- 设置预算警报
 
-为了安全起见，建议限制API密钥的使用：
+### 8. 开发环境配置
 
-1. 在Google Cloud Console中编辑您的API密钥
-2. 在"应用程序限制"中选择"HTTP引荐来源网址"
-3. 添加您的域名（例如：`https://yourdomain.com/*`）
-4. 在"API限制"中选择"限制密钥"并选择所需的API
+对于本地开发，建议使用：
+- HTTP referrers: `localhost:*`
+- 不设置IP地址限制
+- 启用所有必要的API服务
 
-## 功能说明
+### 9. 生产环境配置
 
-### 自定义标记
-- 使用Google Maps的SVG路径创建自定义标记
-- 不同事件类型使用不同颜色：
-  - 节日 (Festival): 红色 (#e11d48)
-  - 市场 (Market): 绿色 (#059669)
-  - 展览 (Exhibition): 紫色 (#7c3aed)
-  - 会议 (Conference): 蓝色 (#2563eb)
-  - 体育 (Sports): 深红色 (#dc2626)
-  - 文化 (Cultural): 橙色 (#ea580c)
+对于生产环境，建议：
+- 设置严格的域名限制
+- 只启用必要的API服务
+- 设置使用配额限制
+- 定期轮换API密钥
 
-### 地图样式
-- 隐藏了POI标签以减少视觉干扰
-- 保持了原有的现代设计风格
+## 🚀 快速修复
 
-### 性能优化
-- 使用Google Maps的高性能渲染
-- 优化的标记管理
-- 响应式地图容器
+如果遇到问题，请按以下顺序检查：
 
-## 故障排除
+1. ✅ API密钥是否正确复制
+2. ✅ 是否启用了Maps JavaScript API
+3. ✅ 是否启用了Places API
+4. ✅ 域名限制设置是否正确
+5. ✅ 浏览器控制台是否有错误信息
 
-### 常见问题
+## 📞 获取帮助
 
-1. **地图不显示**
-   - 检查API密钥是否正确
-   - 确认已启用Maps JavaScript API
-   - 检查浏览器控制台是否有错误信息
-
-2. **API配额超限**
-   - 检查Google Cloud Console中的配额使用情况
-   - 考虑升级到付费计划
-
-3. **标记不显示**
-   - 检查事件数据中的坐标是否正确
-   - 确认地图已完全加载
-
-### 调试模式
-
-在浏览器中打开开发者工具，查看控制台输出以获取详细错误信息。
-
-## 成本说明
-
-Google Maps API的定价基于使用量：
-- 地图加载：每1000次加载约$7
-- 标记显示：免费
-- 搜索请求：每1000次请求约$5
-
-对于开发和小规模使用，通常有免费额度。
-
-## 下一步
-
-1. 替换API密钥
-2. 测试所有功能
-3. 根据需要调整地图样式
-4. 考虑添加更多Google Maps功能（如街景、路线规划等）
-
-如有问题，请检查浏览器控制台的错误信息或联系技术支持。
+如果问题仍然存在，请：
+1. 检查浏览器控制台的错误信息
+2. 访问 [Google Maps Platform 文档](https://developers.google.com/maps/documentation)
+3. 查看 [Google Cloud Console 支持](https://cloud.google.com/support)

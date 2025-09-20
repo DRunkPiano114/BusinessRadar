@@ -43,8 +43,20 @@
                 </div>
 
                 <div class="distance-slider">
-                    <label for="distanceRange">Search radius: <span id="distanceValue">5</span> km</label>
+                    <div class="slider-header">
+                        <label for="distanceRange">Search radius: </label>
+                        <div class="radius-display">
+                            <span id="distanceValue">5</span>
+                            <span class="unit">km</span>
+                        </div>
+                    </div>
                     <input type="range" id="distanceRange" class="slider" min="1" max="50" value="5" oninput="updateDistance(this.value)">
+                    <div class="slider-labels">
+                        <span>1km</span>
+                        <span>25km</span>
+                        <span>50km</span>
+                    </div>
+                    <div class="radius-circle" id="radiusCircle"></div>
                 </div>
             </div>
 
@@ -65,7 +77,7 @@
     </div>
 
     <!-- Google Maps API -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=(YOUR_API_KEY)&libraries=places&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD8na980bmUZ0jYJe5AWhiZkFp0WgsypJU&libraries=places&callback=initMap" onerror="handleMapError()"></script>
     
     <!-- Application Script -->
     <script src="script.js"></script>
