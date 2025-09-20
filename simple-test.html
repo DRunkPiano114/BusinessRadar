@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BusinessRadar Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 400px; width: 100%; border: 1px solid #ccc; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 BusinessRadar Simple Test</h1>
+    
+    <div id="status">Loading...</div>
+    
+    <div id="map"></div>
+    
+    <button onclick="testAI()">Test AI Backend</button>
+    <button onclick="testMap()">Test Map Functions</button>
+    
+    <script>
+        let map;
+        
+        function initMap() {
+            document.getElementById('status').innerHTML = '✅ Google Maps loaded successfully!';
+            document.getElementById('status').className = 'status success';
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: -35.2809, lng: 149.1300 },
+                zoom: 13
+            });
+            
+            new google.maps.Marker({
+                position: { lat: -35.2809, lng: 149.1300 },
+                map: map,
+                title: 'Canberra'
+            });
+        }
+        
+        function handleMapError() {
+            document.getElementById('status').innerHTML = '❌ Google Maps failed to load';
+            document.getElementById('status').className = 'status error';
+        }
+        
+        async function testAI() {
+            try {
+                const response = await fetch('http://localhost:5001/api/health');
+                const data = await response.json();
+                alert('AI Backend: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                alert('AI Backend Error: ' + error.message);
+            }
+        }
+        
+        function testMap() {
+            if (map) {
+                alert('Map is working! Center: ' + map.getCenter().toString());
+            } else {
+                alert('Map not initialized');
+            }
+        }
+    </script>
+    
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuddODOwHtX3kOhrNE-4BeDznq9t_MLSM&libraries=places&callback=initMap" 
+        onerror="handleMapError()">
+    </script>
+</body>
+</html>

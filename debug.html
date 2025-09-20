@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BusinessRadar Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        #map { height: 300px; width: 100%; margin: 20px 0; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🔧 BusinessRadar Debug Tool</h1>
+    
+    <div id="status">Initializing...</div>
+    
+    <h2>🧪 Tests</h2>
+    <button onclick="testGoogleMaps()">Test Google Maps</button>
+    <button onclick="testAIBackend()">Test AI Backend</button>
+    <button onclick="testAIDiscovery()">Test AI Discovery</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <div id="map"></div>
+    
+    <h2>📋 Log</h2>
+    <div id="log" class="log"></div>
+    
+    <script>
+        let log = document.getElementById('log');
+        let status = document.getElementById('status');
+        
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function clearLog() {
+            log.textContent = '';
+        }
+        
+        // Test Google Maps
+        function testGoogleMaps() {
+            logMessage('Testing Google Maps API...');
+            if (typeof google !== 'undefined' && google.maps) {
+                logMessage('✅ Google Maps API loaded successfully');
+                updateStatus('Google Maps: OK', 'success');
+                
+                // Initialize map
+                const map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: -35.2809, lng: 149.1300 },
+                    zoom: 13
+                });
+                
+                new google.maps.Marker({
+                    position: { lat: -35.2809, lng: 149.1300 },
+                    map: map,
+                    title: 'Canberra'
+                });
+                
+                logMessage('✅ Map initialized successfully');
+            } else {
+                logMessage('❌ Google Maps API not loaded');
+                updateStatus('Google Maps: FAILED', 'error');
+            }
+        }
+        
+        // Test AI Backend
+        async function testAIBackend() {
+            logMessage('Testing AI Backend connection...');
+            try {
+                const response = await fetch('http://localhost:5001/api/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    logMessage('✅ AI Backend connected successfully');
+                    logMessage(`AI Enabled: ${data.ai_enabled}`);
+                    updateStatus('AI Backend: OK', 'success');
+                } else {
+                    logMessage('❌ AI Backend returned unhealthy status');
+                    updateStatus('AI Backend: UNHEALTHY', 'error');
+                }
+            } catch (error) {
+                logMessage(`❌ AI Backend connection failed: ${error.message}`);
+                updateStatus('AI Backend: FAILED', 'error');
+            }
+        }
+        
+        // Test AI Discovery
+        async function testAIDiscovery() {
+            logMessage('Testing AI Discovery...');
+            try {
+                const response = await fetch('http://localhost:5001/api/discover-events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        location: { lat: -35.2809, lng: 149.1300 },
+                        radius_km: 5,
+                        business_type: 'restaurant',
+                        date_range: 30
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logMessage(`✅ AI Discovery successful - Found ${data.events.length} events`);
+                    updateStatus('AI Discovery: OK', 'success');
+                } else {
+                    logMessage(`❌ AI Discovery failed: ${data.error}`);
+                    updateStatus('AI Discovery: FAILED', 'error');
+                }
+            } catch (error) {
+                logMessage(`❌ AI Discovery error: ${error.message}`);
+                updateStatus('AI Discovery: FAILED', 'error');
+            }
+        }
+        
+        // Initialize on load
+        window.onload = function() {
+            logMessage('Debug tool initialized');
+            updateStatus('Ready for testing', 'info');
+            
+            // Auto-test Google Maps
+            setTimeout(testGoogleMaps, 1000);
+        };
+        
+        // Error handler for Google Maps
+        function handleMapError() {
+            logMessage('❌ Google Maps API failed to load');
+            updateStatus('Google Maps: FAILED', 'error');
+        }
+    </script>
+    
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuddODOwHtX3kOhrNE-4BeDznq9t_MLSM&libraries=places&callback=testGoogleMaps" 
+        onerror="handleMapError()">
+    </script>
+</body>
+</html>

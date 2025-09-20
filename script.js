@@ -11,6 +11,8 @@ class EventMapApp {
         this.searchMarker = null;
         this.autocomplete = null;
         this.radiusCircle = null;
+        this.businessType = '';
+        this.aiBackendUrl = 'http://localhost:5001/api';
         
         // Mock event data (real coordinates around Canberra)
         this.events = [
@@ -334,8 +336,11 @@ class EventMapApp {
                 </div>
                 <div class="event-type">${this.getTypeLabel(event.type)}</div>
                 <div class="business-tip">
-                    💡 Business Tip: ${event.businessTip}
+                    💡 Business Tip: ${event.businessTip || event.business_tip || 'No business tips available'}
                 </div>
+                ${event.aiGenerated ? '<div class="ai-badge">🤖 AI Generated</div>' : ''}
+                ${event.opportunity_rating ? `<div class="opportunity-rating">⭐ Opportunity Rating: ${event.opportunity_rating}/10</div>` : ''}
+                ${event.revenue_potential ? `<div class="revenue-potential">💰 Revenue Potential: ${event.revenue_potential}</div>` : ''}
                 <div class="event-source">
                     <span>📰 Source:</span>
                     <a href="${event.sourceUrl}" target="_blank" class="source-link" rel="noopener noreferrer">
@@ -615,6 +620,126 @@ class EventMapApp {
             radius: this.searchRadius * 1000 // Convert km to meters
         });
     }
+
+    // AI-Powered Event Discovery
+    async aiDiscoverEvents() {
+        try {
+            this.updateStatus('🤖 AI正在发现商业机会...');
+            
+            const response = await fetch(`${this.aiBackendUrl}/discover-events`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    location: this.userLocation,
+                    radius_km: this.searchRadius,
+                    business_type: this.businessType,
+                    date_range: 30
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.events) {
+                // Merge AI-discovered events with existing events
+                this.mergeAIEvents(data.events);
+                this.renderEvents();
+                this.renderMapMarkers();
+                this.updateStatus(`🤖 AI发现 ${data.events.length} 个新机会 - 总共 ${this.events.length} 个活动`);
+            } else {
+                throw new Error(data.error || 'AI discovery failed');
+            }
+            
+        } catch (error) {
+            console.error('AI discovery error:', error);
+            this.updateStatus('⚠️ AI发现失败 - 使用本地数据');
+            
+            // Fallback to local data
+            this.renderEvents();
+            this.renderMapMarkers();
+        }
+    }
+
+    mergeAIEvents(aiEvents) {
+        // Add AI events to existing events with unique IDs
+        const maxId = Math.max(...this.events.map(e => e.id), 0);
+        
+        aiEvents.forEach((event, index) => {
+            const newEvent = {
+                ...event,
+                id: maxId + index + 1,
+                aiGenerated: true,
+                source: event.source || 'AI Discovery',
+                sourceUrl: event.sourceUrl || '#'
+            };
+            
+            // Check if event already exists (avoid duplicates)
+            const exists = this.events.some(e => 
+                e.title.toLowerCase() === event.title.toLowerCase() &&
+                e.location.toLowerCase() === event.location.toLowerCase()
+            );
+            
+            if (!exists) {
+                this.events.push(newEvent);
+            }
+        });
+    }
+
+    async analyzeCurrentOpportunities() {
+        try {
+            this.updateStatus('🧠 AI正在分析商业机会...');
+            
+            const filteredEvents = this.getFilteredEvents();
+            if (filteredEvents.length === 0) {
+                this.updateStatus('⚠️ 没有找到活动进行分析');
+                return;
+            }
+
+            // Analyze each event
+            for (const event of filteredEvents.slice(0, 5)) { // Analyze top 5 events
+                try {
+                    const response = await fetch(`${this.aiBackendUrl}/analyze-opportunity`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            event: event,
+                            business_type: this.businessType
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.insights) {
+                            // Update event with AI insights
+                            Object.assign(event, data.insights);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error analyzing event ${event.id}:`, error);
+                }
+            }
+
+            // Re-render with updated insights
+            this.renderEvents();
+            this.updateStatus(`🧠 AI分析完成 - 已分析 ${Math.min(filteredEvents.length, 5)} 个活动`);
+            
+        } catch (error) {
+            console.error('AI analysis error:', error);
+            this.updateStatus('⚠️ AI分析失败');
+        }
+    }
+
+    updateBusinessType() {
+        this.businessType = document.getElementById('businessType').value;
+        this.updateStatus(`Business type updated: ${this.businessType || 'All Businesses'}`);
+    }
 }
 
 // Global functions
@@ -705,6 +830,25 @@ function searchEvents() {
                 app.updateStatus(`Found ${app.getFilteredEvents().length} nearby events`);
             }, 5000);
         }, 800);
+    }
+}
+
+// AI Functions
+function aiDiscoverEvents() {
+    if (app) {
+        app.aiDiscoverEvents();
+    }
+}
+
+function analyzeCurrentOpportunities() {
+    if (app) {
+        app.analyzeCurrentOpportunities();
+    }
+}
+
+function updateBusinessType() {
+    if (app) {
+        app.updateBusinessType();
     }
 }
 

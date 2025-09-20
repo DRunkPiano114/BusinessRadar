@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps API Test</title>
+    <style>
+        #map { height: 400px; width: 100%; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Google Maps API Test</h1>
+    <div id="status" class="status">Loading...</div>
+    <div id="map"></div>
+    
+    <script>
+        function initMap() {
+            document.getElementById('status').innerHTML = '✅ Google Maps API loaded successfully!';
+            document.getElementById('status').className = 'status success';
+            
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: -35.2809, lng: 149.1300 },
+                zoom: 13
+            });
+            
+            new google.maps.Marker({
+                position: { lat: -35.2809, lng: 149.1300 },
+                map: map,
+                title: 'Canberra'
+            });
+        }
+        
+        function handleError() {
+            document.getElementById('status').innerHTML = '❌ Google Maps API failed to load. Check your API key and enabled services.';
+            document.getElementById('status').className = 'status error';
+        }
+    </script>
+    
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuddODOwHtX3kOhrNE-4BeDznq9t_MLSM&libraries=places&callback=initMap" 
+        onerror="handleError()">
+    </script>
+</body>
+</html>

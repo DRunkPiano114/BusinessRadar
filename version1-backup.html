@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Event Discovery Map - Business Radar</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="header">
+                <h1>🎯 Business Radar</h1>
+                <p>Discover local events, seize business opportunities</p>
+                <a href="pro.html" class="go-pro-btn">Go Pro</a>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search locations or addresses" id="searchInput">
+                    <button class="search-btn" onclick="searchEvents()">
+                        <svg class="icon" viewBox="0 0 20 20">
+                            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <button class="ai-search-btn" onclick="aiDiscoverEvents()" title="AI-Powered Discovery">
+                        <svg class="icon" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+                    <button class="clear-btn" onclick="app.clearSearch()" title="Clear search">
+                        <svg class="icon" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="ai-controls">
+                    <div class="business-type-selector">
+                        <label for="businessType">Business Type:</label>
+                        <select id="businessType" onchange="updateBusinessType()">
+                            <option value="">All Businesses</option>
+                            <option value="restaurant">Restaurant & Food</option>
+                            <option value="retail">Retail & Shopping</option>
+                            <option value="services">Professional Services</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="health">Health & Wellness</option>
+                            <option value="education">Education & Training</option>
+                        </select>
+                    </div>
+                    <button class="ai-analyze-btn" onclick="analyzeCurrentOpportunities()" title="Analyze Business Opportunities">
+                        🧠 AI Analysis
+                    </button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-tag active" data-type="all">All</div>
+                    <div class="filter-tag" data-type="festival">Festival</div>
+                    <div class="filter-tag" data-type="market">Market</div>
+                    <div class="filter-tag" data-type="exhibition">Exhibition</div>
+                    <div class="filter-tag" data-type="conference">Conference</div>
+                    <div class="filter-tag" data-type="sports">Sports</div>
+                    <div class="filter-tag" data-type="cultural">Cultural</div>
+                </div>
+
+                <div class="distance-slider">
+                    <div class="slider-header">
+                        <label for="distanceRange">Search radius: </label>
+                        <div class="radius-display">
+                            <span id="distanceValue">5</span>
+                            <span class="unit">km</span>
+                        </div>
+                    </div>
+                    <input type="range" id="distanceRange" class="slider" min="1" max="50" value="5" oninput="updateDistance(this.value)">
+                    <div class="slider-labels">
+                        <span>1km</span>
+                        <span>25km</span>
+                        <span>50km</span>
+                    </div>
+                    <div class="radius-circle" id="radiusCircle"></div>
+                </div>
+            </div>
+
+            <div class="events-list" id="eventsList">
+                <!-- Events list will be dynamically generated -->
+            </div>
+        </div>
+
+        <!-- Map Area -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="status-bar" id="statusBar">
+                <div class="loading"></div>
+                Searching for nearby events...
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Maps API - 请替换为您的有效API密钥 -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_VALID_API_KEY_HERE&libraries=places&callback=initMap" onerror="handleMapError()"></script>
+    
+    <!-- Application Script -->
+    <script src="script.js"></script>
+</body>
+</html>
