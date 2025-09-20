@@ -658,3 +658,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // App will be initialized when Google Maps loads
 });
 
+
