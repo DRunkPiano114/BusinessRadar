@@ -1,19 +1,11 @@
 # BusinessRadar - MSME Business Radar
 
-<div align="center">
-
-**[🇬🇧 English](#english-version) | [🇨🇳 中文](#中文版本)**
-
-</div>
-
 ---
 
 ## 🇬🇧 English Version
 
 ### Project Overview
 A platform providing regional event and business opportunity information for MSMEs, helping food services and individual businesses seize commercial opportunities.
-
-**Demo:** [PowerPoint](https://docs.google.com/presentation/d/1TkGB4P0EvWyFs2KsBtTQNaFSEUQ3saorDcyjx8ihf9U/edit?usp=sharing)
 
 ### Core Features
 1. **Inventory Management** - Adjust stock based on event predictions
@@ -41,18 +33,6 @@ A platform providing regional event and business opportunity information for MSM
 **Top Right:**
 - Login button
 
-### Tech Stack
-- **Frontend:** React + Tailwind CSS
-- **Backend:** Node.js + Express
-- **Database:** MongoDB
-- **Maps:** Google Maps API
-
-### Quick Start
-```bash
-git clone https://github.com/your-org/business-radar.git
-npm install
-npm run dev
-```
 
 ### Version Features
 - **Free:** Basic search, 10 results, 5km radius
@@ -64,8 +44,6 @@ npm run dev
 
 ### 项目简介
 为中小微企业提供区域活动和商机信息的平台，帮助餐饮和个体商户抓住商业机会。
-
-**演示文档:** [PowerPoint](https://docs.google.com/presentation/d/1TkGB4P0EvWyFs2KsBtTQNaFSEUQ3saorDcyjx8ihf9U/edit?usp=sharing)
 
 ### 核心功能
 1. **库存管理** - 根据活动预测调整库存
@@ -93,27 +71,9 @@ npm run dev
 **右上角：**
 - 登录按钮
 
-### 技术栈
-- **前端：** React + Tailwind CSS
-- **后端：** Node.js + Express
-- **数据库：** MongoDB
-- **地图：** Google Maps API
-
-### 快速开始
-```bash
-git clone https://github.com/your-org/business-radar.git
-npm install
-npm run dev
-```
 
 ### 版本功能
 - **免费版：** 基础搜索，10个结果，5km范围
 - **Pro版：** 无限结果，高级筛选，数据导出
 
 ---
-
-<div align="center">
-
-**⭐ 如果有帮助请给个Star | Give us a Star if helpful ⭐**
-
-</div>
