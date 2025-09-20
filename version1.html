@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地活动发现地图 - 商机雷达</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 350px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 搜索和筛选 */
+        .search-section {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .filter-tag {
+            padding: 6px 12px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .distance-slider {
+            margin-top: 15px;
+        }
+
+        .distance-slider label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        /* 活动列表 */
+        .events-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .event-card.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .event-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .event-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .event-detail {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .event-detail svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+
+        .event-type {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .event-source {
+            margin-top: 8px;
+            padding: 6px 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #64748b;
+            border-left: 2px solid #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .source-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+        }
+
+        .source-icon {
+            width: 12px;
+            height: 12px;
+            margin-left: 4px;
+        }
+
+        /* 地图容器 */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 状态指示器 */
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #475569;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 自定义地图标记样式 */
+        .custom-marker {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            border: 3px solid white;
+        }
+
+        .custom-marker:before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+
+        .custom-marker.selected {
+            background: #f59e0b;
+            transform: rotate(-45deg) scale(1.2);
+        }
+
+        .custom-marker.festival { background: #e11d48; }
+        .custom-marker.market { background: #059669; }
+        .custom-marker.exhibition { background: #7c3aed; }
+        .custom-marker.conference { background: #2563eb; }
+        .custom-marker.sports { background: #dc2626; }
+        .custom-marker.cultural { background: #ea580c; }
+
+        /* 弹窗样式 */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .popup-content {
+            max-width: 300px;
+            padding: 4px;
+        }
+
+        .popup-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .popup-details {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .popup-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .popup-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .popup-btn.secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            .map-container {
+                height: 50vh;
+            }
+        }
+
+        /* 图标SVG */
+        .icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* 用户位置标记 */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="header">
+                <h1>🎯 商机雷达</h1>
+                <p>发现周围活动，抓住商业机会</p>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="搜索活动类型、地点..." id="searchInput">
+                    <button class="search-btn" onclick="searchEvents()">
+                        <svg class="icon" viewBox="0 0 20 20">
+                            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-tag active" data-type="all">全部</div>
+                    <div class="filter-tag" data-type="festival">节庆</div>
+                    <div class="filter-tag" data-type="market">市集</div>
+                    <div class="filter-tag" data-type="exhibition">展览</div>
+                    <div class="filter-tag" data-type="conference">会议</div>
+                    <div class="filter-tag" data-type="sports">体育</div>
+                    <div class="filter-tag" data-type="cultural">文化</div>
+                </div>
+
+                <div class="distance-slider">
+                    <label for="distanceRange">搜索半径: <span id="distanceValue">5</span> 公里</label>
+                    <input type="range" id="distanceRange" class="slider" min="1" max="50" value="5" oninput="updateDistance(this.value)">
+                </div>
+            </div>
+
+            <div class="events-list" id="eventsList">
+                <!-- 活动列表将动态生成 -->
+            </div>
+        </div>
+
+        <!-- 地图区域 -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="status-bar" id="statusBar">
+                <div class="loading"></div>
+                正在搜索附近活动...
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Leaflet地图库 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        class EventMapApp {
+            constructor() {
+                this.currentFilter = 'all';
+                this.searchRadius = 5;
+                this.selectedEvent = null;
+                this.userLocation = { lat: -35.2809, lng: 149.1300 }; // 堪培拉默认位置
+                this.map = null;
+                this.markers = [];
+                this.userMarker = null;
+                
+                // 模拟活动数据（堪培拉周边真实坐标）
+                this.events = [
+                    {
+                        id: 1,
+                        title: '堪培拉花卉节',
+                        type: 'festival',
+                        date: '2025-09-25',
+                        time: '09:00',
+                        location: '联邦公园',
+                        lat: -35.2756,
+                        lng: 149.1310,
+                        attendees: 15000,
+                        description: '春季花卉展览，预计吸引大量游客和家庭',
+                        businessTip: '适合: 餐饮摊位、花卉销售、摄影服务、儿童娱乐',
+                        source: 'visitcanberra.com.au',
+                        sourceUrl: 'https://visitcanberra.com.au/events/floriade'
+                    },
+                    {
+                        id: 2,
+                        title: '周末农夫市集',
+                        type: 'market',
+                        date: '2025-09-21',
+                        time: '08:00',
+                        location: '老巴士站市场',
+                        lat: -35.2823,
+                        lng: 149.1276,
+                        attendees: 3000,
+                        description: '每周末有机农产品市集，本地居民聚集地',
+                        businessTip: '适合: 有机食品、手工艺品、咖啡摊位、烘焙产品',
+                        source: 'oldbusdepomarkets.com.au',
+                        sourceUrl: 'https://oldbusdepomarkets.com.au'
+                    },
+                    {
+                        id: 3,
+                        title: '科技创新展览会',
+                        type: 'exhibition',
+                        date: '2025-09-28',
+                        time: '10:00',
+                        location: '国家会议中心',
+                        lat: -35.2945,
+                        lng: 149.1362,
+                        attendees: 8000,
+                        description: '最新科技产品展示和演示，商务人士云集',
+                        businessTip: '适合: IT服务、电子产品、商务咨询、培训服务',
+                        source: 'eventbrite.com.au',
+                        sourceUrl: 'https://eventbrite.com.au/e/tech-innovation-expo'
+                    },
+                    {
+                        id: 4,
+                        title: '堪培拉马拉松',
+                        type: 'sports',
+                        date: '2025-09-22',
+                        time: '07:00',
+                        location: '国会山周边',
+                        lat: -35.2688,
+                        lng: 149.1337,
+                        attendees: 12000,
+                        description: '年度马拉松赛事，路线经过主要景点',
+                        businessTip: '适合: 运动用品、能量食品、按摩服务、运动饮料',
+                        source: 'canberramarathon.org.au',
+                        sourceUrl: 'https://canberramarathon.org.au'
+                    },
+                    {
+                        id: 5,
+                        title: '中秋文化节',
+                        type: 'cultural',
+                        date: '2025-09-29',
+                        time: '18:00',
+                        location: '中国园',
+                        lat: -35.2891,
+                        lng: 149.1189,
+                        attendees: 5000,
+                        description: '传统中秋节庆祝活动，多元文化体验',
+                        businessTip: '适合: 月饼销售、茶艺表演、文化商品、亚洲美食',
+                        source: 'facebook.com/events',
+                        sourceUrl: 'https://facebook.com/events/mid-autumn-festival-canberra'
+                    },
+                    {
+                        id: 6,
+                        title: '创业者聚会',
+                        type: 'conference',
+                        date: '2025-09-26',
+                        time: '19:00',
+                        location: '新国会三角区',
+                        lat: -35.2775,
+                        lng: 149.1285,
+                        attendees: 200,
+                        description: '本地创业者网络交流活动，高质量商务网络',
+                        businessTip: '适合: 商务服务、咨询顾问、投资服务、共享办公',
+                        source: 'meetup.com',
+                        sourceUrl: 'https://meetup.com/canberra-entrepreneurs'
+                    },
+                    {
+                        id: 7,
+                        title: '湖边音乐节',
+                        type: 'festival',
+                        date: '2025-09-30',
+                        time: '16:00',
+                        location: '格里芬湖',
+                        lat: -35.2904,
+                        lng: 149.1299,
+                        attendees: 8000,
+                        description: '户外音乐节，年轻人和音乐爱好者聚集',
+                        businessTip: '适合: 音响设备、饮料摊位、音乐周边、户外用品',
+                        source: 'musicact.org.au',
+                        sourceUrl: 'https://musicact.org.au/events/lakeside-music-festival'
+                    },
+                    {
+                        id: 8,
+                        title: '艺术品拍卖会',
+                        type: 'exhibition',
+                        date: '2025-10-01',
+                        time: '14:00',
+                        location: '国家美术馆',
+                        lat: -35.2967,
+                        lng: 149.1321,
+                        attendees: 500,
+                        description: '高端艺术品拍卖，收藏家和艺术爱好者参与',
+                        businessTip: '适合: 艺术品评估、保险服务、高端餐饮、收藏咨询',
+                        source: 'nga.gov.au',
+                        sourceUrl: 'https://nga.gov.au/exhibitions/art-auction'
+                    }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.initMap();
+                this.getUserLocation();
+                this.renderEvents();
+                this.bindEvents();
+                this.updateStatus('找到 ' + this.events.length + ' 个附近活动');
+            }
+
+            initMap() {
+                // 初始化Leaflet地图，以堪培拉为中心
+                this.map = L.map('map').setView([-35.2809, 149.1300], 13);
+
+                // 添加地图瓦片图层 - 使用OpenStreetMap
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(this.map);
+
+                // 添加地图事件监听
+                this.map.on('moveend', () => {
+                    this.updateVisibleEvents();
+                });
+            }
+
+            getUserLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            this.userLocation = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            
+                            // 更新地图中心
+                            this.map.setView([this.userLocation.lat, this.userLocation.lng], 13);
+                            
+                            // 添加用户位置标记
+                            this.addUserLocationMarker();
+                            
+                            // 重新渲染事件标记
+                            this.renderMapMarkers();
+                        },
+                        (error) => {
+                            console.log('无法获取位置，使用默认位置（堪培拉）');
+                            this.addUserLocationMarker();
+                            this.renderMapMarkers();
+                        }
+                    );
+                } else {
+                    this.addUserLocationMarker();
+                    this.renderMapMarkers();
+                }
+            }
+
+            addUserLocationMarker() {
+                if (this.userMarker) {
+                    this.map.removeLayer(this.userMarker);
+                }
+                
+                // 创建用户位置标记
+                const userIcon = L.divIcon({
+                    className: 'user-location-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+                
+                this.userMarker = L.marker([this.userLocation.lat, this.userLocation.lng], {
+                    icon: userIcon
+                }).addTo(this.map);
+                
+                this.userMarker.bindPopup('📍 您的位置').openPopup();
+            }
+
+            renderEvents() {
+                const eventsList = document.getElementById('eventsList');
+                const filteredEvents = this.getFilteredEvents();
+                
+                eventsList.innerHTML = filteredEvents.map(event => `
+                    <div class="event-card" data-id="${event.id}" onclick="app.selectEvent(${event.id})">
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-details">
+                            <div class="event-detail">
+                                <svg class="icon" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                </svg>
+                                ${event.date} ${event.time}
+                            </div>
+                            <div class="event-detail">
+                                <svg class="icon" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                ${event.location}
+                            </div>
+                            <div class="event-detail">
+                                <svg class="icon" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                                </svg>
+                                预计 ${event.attendees.toLocaleString()} 人参加
+                            </div>
+                            <div class="event-detail">
+                                📏 距离您 ${this.calculateDistance(event).toFixed(1)} 公里
+                            </div>
+                        </div>
+                        <div class="event-type">${this.getTypeLabel(event.type)}</div>
+                        <div class="business-tip">
+                            💡 商机提示: ${event.businessTip}
+                        </div>
+                        <div class="event-source">
+                            <span>📰 信息来源:</span>
+                            <a href="${event.sourceUrl}" target="_blank" class="source-link" rel="noopener noreferrer">
+                                ${event.source}
+                                <svg class="source-icon" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                                    <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderMapMarkers() {
+                // 清除现有标记
+                this.markers.forEach(marker => {
+                    this.map.removeLayer(marker);
+                });
+                this.markers = [];
+                
+                const filteredEvents = this.getFilteredEvents();
+                
+                filteredEvents.forEach(event => {
+                    // 创建自定义标记图标
+                    const markerIcon = L.divIcon({
+                        className: `custom-marker ${event.type}`,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 40],
+                        popupAnchor: [0, -40]
+                    });
+                    
+                    // 创建标记
+                    const marker = L.marker([event.lat, event.lng], {
+                        icon: markerIcon
+                    }).addTo(this.map);
+                    
+                    // 创建弹窗内容
+                    const popupContent = `
+                        <div class="popup-content">
+                            <div class="popup-title">${event.title}</div>
+                            <div class="popup-details">
+                                📅 ${event.date} ${event.time}<br>
+                                📍 ${event.location}<br>
+                                👥 ${event.attendees.toLocaleString()} 人参加<br>
+                                📏 距离您 ${this.calculateDistance(event).toFixed(1)} 公里<br>
+                                📝 ${event.description}<br>
+                                📰 来源: <a href="${event.sourceUrl}" target="_blank" style="color: #3b82f6;">${event.source}</a>
+                            </div>
+                            <div class="popup-actions">
+                                <button class="popup-btn primary" onclick="app.addToCalendar(${event.id})">添加到日历</button>
+                                <button class="popup-btn secondary" onclick="app.shareEvent(${event.id})">分享</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent, {
+                        maxWidth: 300,
+                        className: 'custom-popup'
+                    });
+                    
+                    // 标记点击事件
+                    marker.on('click', () => {
+                        this.selectEvent(event.id);
+                    });
+                    
+                    // 存储标记引用
+                    marker.eventId = event.id;
+                    this.markers.push(marker);
+                });
+            }
+
+            selectEvent(eventId) {
+                // 更新列表选中状态
+                document.querySelectorAll('.event-card').forEach(card => {
+                    card.classList.remove('selected');
+                    if (parseInt(card.dataset.id) === eventId) {
+                        card.classList.add('selected');
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+                
+                // 更新地图标记选中状态
+                this.markers.forEach(marker => {
+                    const markerElement = marker.getElement();
+                    if (markerElement) {
+                        markerElement.classList.remove('selected');
+                        if (marker.eventId === eventId) {
+                            markerElement.classList.add('selected');
+                            
+                            // 移动地图中心到选中事件
+                            const event = this.events.find(e => e.id === eventId);
+                            if (event) {
+                                this.map.setView([event.lat, event.lng], 15, {
+                                    animate: true,
+                                    duration: 0.5
+                                });
+                                
+                                // 打开弹窗
+                                marker.openPopup();
+                            }
+                        }
+                    }
+                });
+                
+                this.selectedEvent = eventId;
+            }
+
+            getFilteredEvents() {
+                let filtered = this.events;
+                
+                if (this.currentFilter !== 'all') {
+                    filtered = filtered.filter(event => event.type === this.currentFilter);
+                }
+                
+                // 按距离过滤
+                filtered = filtered.filter(event => {
+                    return this.calculateDistance(event) <= this.searchRadius;
+                });
+                
+                // 按距离排序
+                filtered.sort((a, b) => this.calculateDistance(a) - this.calculateDistance(b));
+                
+                return filtered;
+            }
+
+            calculateDistance(event) {
+                // 使用Haversine公式计算距离
+                const R = 6371; // 地球半径（公里）
+                const dLat = this.deg2rad(event.lat - this.userLocation.lat);
+                const dLng = this.deg2rad(event.lng - this.userLocation.lng);
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(this.deg2rad(this.userLocation.lat)) * Math.cos(this.deg2rad(event.lat)) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            deg2rad(deg) {
+                return deg * (Math.PI/180);
+            }
+
+            updateVisibleEvents() {
+                // 当地图移动时更新可见事件
+                this.renderEvents();
+            }
+
+            bindEvents() {
+                // 筛选标签点击
+                document.querySelectorAll('.filter-tag').forEach(tag => {
+                    tag.addEventListener('click', () => {
+                        document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                        tag.classList.add('active');
+                        this.currentFilter = tag.dataset.type;
+                        this.renderEvents();
+                        this.renderMapMarkers();
+                        this.updateStatus(`筛选: ${this.getTypeLabel(this.currentFilter)}`);
+                    });
+                });
+            }
+
+            getTypeLabel(type) {
+                const labels = {
+                    all: '全部活动',
+                    festival: '节庆活动',
+                    market: '市集',
+                    exhibition: '展览',
+                    conference: '会议',
+                    sports: '体育',
+                    cultural: '文化'
+                };
+                return labels[type] || type;
+            }
+
+            updateStatus(message) {
+                document.getElementById('statusBar').innerHTML = message;
+            }
+
+            addToCalendar(eventId) {
+                const event = this.events.find(e => e.id === eventId);
+                if (event) {
+                    // 创建日历事件URL（Google Calendar格式）
+                    const startDate = event.date.replace(/-/g, '') + 'T' + event.time.replace(':', '') + '00';
+                    const endDate = event.date.replace(/-/g, '') + 'T' + (parseInt(event.time.split(':')[0]) + 2).toString().padStart(2, '0') + event.time.split(':')[1] + '00';
+                    
+                    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(event.description + ' - ' + event.businessTip)}&location=${encodeURIComponent(event.location)}`;
+                    
+                    window.open(calendarUrl, '_blank');
+                }
+            }
+
+            shareEvent(eventId) {
+                const event = this.events.find(e => e.id === eventId);
+                if (event) {
+                    const shareText = `🎯 发现商机！${event.title}\n📅 ${event.date} ${event.time}\n📍 ${event.location}\n👥 预计${event.attendees}人参加\n💡 ${event.businessTip}\n📰 详情: ${event.sourceUrl}`;
+                    
+                    if (navigator.share) {
+                        navigator.share({
+                            title: event.title,
+                            text: shareText,
+                            url: event.sourceUrl
+                        });
+                    } else {
+                        // 复制到剪贴板
+                        navigator.clipboard.writeText(shareText).then(() => {
+                            alert('活动信息已复制到剪贴板！');
+                        });
+                    }
+                }
+            }
+        }
+
+        // 全局函数
+        function updateDistance(value) {
+            document.getElementById('distanceValue').textContent = value;
+            app.searchRadius = parseInt(value);
+            app.renderEvents();
+            app.renderMapMarkers();
+            app.updateStatus(`搜索半径: ${value}公里 - 找到 ${app.getFilteredEvents().length} 个活动`);
+        }
+
+        function searchEvents() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (query.trim() === '') {
+                app.renderEvents();
+                app.renderMapMarkers();
+                return;
+            }
+            
+            app.updateStatus('搜索中: ' + query);
+            
+            // 模拟搜索延迟
+            setTimeout(() => {
+                // 过滤事件
+                const filteredEvents = app.events.filter(event => 
+                    event.title.toLowerCase().includes(query) ||
+                    event.location.toLowerCase().includes(query) ||
+                    event.description.toLowerCase().includes(query) ||
+                    app.getTypeLabel(event.type).toLowerCase().includes(query)
+                );
+                
+                // 临时存储原始事件，显示搜索结果
+                const originalEvents = app.events;
+                app.events = filteredEvents;
+                app.renderEvents();
+                app.renderMapMarkers();
+                app.updateStatus(`搜索结果: 找到 ${filteredEvents.length} 个匹配的活动`);
+                
+                // 3秒后恢复原始事件列表
+                setTimeout(() => {
+                    app.events = originalEvents;
+                    app.renderEvents();
+                    app.renderMapMarkers();
+                    app.updateStatus(`找到 ${app.getFilteredEvents().length} 个附近活动`);
+                }, 5000);
+            }, 800);
+        }
+
+        // 初始化应用
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new EventMapApp();
+        });
+    </script>
+</body>
+</html>
